@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 16px;
+      background: #ffffff;
+      color: #000000;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #fbbf24;
+    }
+
+    h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .upload-area {
+      border: 1px dashed #d4d4d4;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      margin-bottom: 12px;
+    }
+
+    .upload-area.has-files {
+      border-style: solid;
+    }
+
+    .upload-area:hover {
+      border-color: #9ca3af;
+      background: #f9fafb;
+    }
+
+    .upload-icon {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+
+    .upload-text {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .upload-subtext {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .files-list {
+      max-height: 140px;
+      overflow-y: auto;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      padding: 8px;
+      margin-bottom: 12px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    .file-item:nth-child(odd) {
+      background: #f9fafb;
+    }
+
+    .file-icon {
+      font-size: 14px;
+    }
+
+    .file-name {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #111827;
+    }
+
+    .file-size {
+      color: #9ca3af;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .primary-button,
+    .secondary-button {
+      flex: 1;
+      border-radius: 6px;
+      border: none;
+      font-size: 11px;
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .primary-button {
+      background: #111827;
+      color: #f9fafb;
+    }
+
+    .primary-button:hover:enabled {
+      background: #000000;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+    }
+
+    .secondary-button {
+      background: #f3f4f6;
+      color: #111827;
+      border: 1px solid #e5e7eb;
+    }
+
+    .secondary-button:hover:enabled {
+      background: #e5e7eb;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .notification {
+      display: none;
+      margin-top: 4px;
+      font-size: 11px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .notification.success {
+      background: #ecfdf3;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    .notification.warning {
+      background: #fefce8;
+      color: #854d0e;
+      border: 1px solid #fef08a;
+    }
+
+    .notification.error {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        transform: translateY(3px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="icon">⚡️</div>
+    <h1>RoomFlow – Images to Layout</h1>
+  </div>
+
+  <div class="upload-area" id="uploadArea">
+    <div class="upload-icon">📁</div>
+    <div class="upload-text">Click to select images or drag and drop</div>
+    <div class="upload-subtext">Supports JPG & PNG</div>
+  </div>
+
+  <input type="file" id="fileInput" multiple accept="image/*">
+
+  <div class="files-list" id="filesList" style="display: none;"></div>
+
+  <div class="button-group">
+    <button class="secondary-button" id="resetBtn">Reset Layers</button>
+    <button class="secondary-button" id="clearBtn" style="display: none;">Clear</button>
+    <button class="primary-button" id="uploadBtn" disabled>Upload to Layout</button>
+  </div>
+
+  <div class="notification" id="notification"></div>
+
+  <script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const filesList = document.getElementById('filesList');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const notification = document.getElementById('notification');
+    const resetBtn = document.getElementById('resetBtn');
+
+    let selectedFiles = [];
+
+    // --- File handling ---
+
+    uploadArea.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    uploadArea.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = '#4b5563';
+      uploadArea.style.background = '#f9fafb';
+    });
+
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+
+    uploadArea.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = '#d4d4d4';
+      uploadArea.style.background = '#ffffff';
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = '#d4d4d4';
+      uploadArea.style.background = '#ffffff';
+      handleFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      selectedFiles = [];
+      fileInput.value = '';
+      displayFiles();
+      uploadBtn.disabled = true;
+      clearBtn.style.display = 'none';
+      uploadArea.classList.remove('has-files');
+    });
+
+    function handleFiles(fileList) {
+      selectedFiles = Array.from(fileList);
+      displayFiles();
+      uploadBtn.disabled = selectedFiles.length === 0;
+      clearBtn.style.display = selectedFiles.length > 0 ? 'block' : 'none';
+      if (selectedFiles.length > 0) {
+        uploadArea.classList.add('has-files');
+      }
+    }
+
+    function displayFiles() {
+      if (selectedFiles.length === 0) {
+        filesList.style.display = 'none';
+        filesList.innerHTML = '';
+        return;
+      }
+
+      filesList.style.display = 'block';
+      filesList.innerHTML = selectedFiles
+        .map((file) => {
+          const sizeKB = Math.round(file.size / 1024);
+          return `
+            <div class="file-item">
+              <span class="file-icon">🖼️</span>
+              <span class="file-name">${file.name}</span>
+              <span class="file-size">${sizeKB} KB</span>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    // --- Buttons ---
+
+    uploadBtn.addEventListener('click', async () => {
+      if (selectedFiles.length === 0) {
+        showNotification('No files selected. Add image files before uploading.', 'warning');
+        return;
+      }
+
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = 'Uploading...';
+
+      try {
+        const images = await Promise.all(
+          selectedFiles.map(
+            (file) =>
+              new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const arrayBuffer = reader.result;
+                  resolve({
+                    name: file.name,
+                    data: new Uint8Array(arrayBuffer),
+                  });
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+              })
+          )
+        );
+
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'upload-images',
+              images,
+            },
+          },
+          '*'
+        );
+      } catch (err) {
+        showNotification('Error reading files. Please try again.', 'error');
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload to Layout';
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      resetBtn.disabled = true;
+      resetBtn.textContent = 'Resetting...';
+
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: 'auto-seed-room-names',
+          },
+        },
+        '*'
+      );
+    });
+
+    // --- Messages from plugin code ---
+
+    onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      if (msg.type === 'upload-complete') {
+        const { updatedCount, notFoundLayers, totalImages } = msg;
+
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload to Layout';
+
+        let message = `✓ Successfully updated ${updatedCount} of ${totalImages} layers`;
+        let notificationClass = 'success';
+
+        if (notFoundLayers && notFoundLayers.length > 0) {
+          message += `\n⚠ Issues:\n- ${notFoundLayers.join('\n- ')}`;
+          notificationClass = 'warning';
+        }
+
+        showNotification(message, notificationClass);
+
+        setTimeout(() => {
+          selectedFiles = [];
+          fileInput.value = '';
+          displayFiles();
+          uploadBtn.disabled = true;
+          clearBtn.style.display = 'none';
+          uploadArea.classList.remove('has-files');
+        }, 1500);
+      } else if (msg.type === 'auto-seed-complete') {
+        const { renamedLayers, processedBlocks, issues } = msg;
+
+        resetBtn.disabled = false;
+        resetBtn.textContent = 'Reset Layers';
+
+        let message = `✓ Reset ${renamedLayers} image layers in ${processedBlocks} room blocks`;
+        let notificationClass = 'success';
+
+        if (issues && issues.length > 0) {
+          message += `\n⚠ Issues:\n- ${issues.join('\n- ')}`;
+          notificationClass = 'warning';
+        }
+
+        showNotification(message, notificationClass);
+      }
+    };
+
+    // --- Notification ---
+
+    function showNotification(message, type) {
+      notification.textContent = message;
+      notification.className = `notification ${type}`;
+      notification.style.display = 'block';
+      notification.style.animation = 'fadeInUp 0.15s ease-out';
+
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
