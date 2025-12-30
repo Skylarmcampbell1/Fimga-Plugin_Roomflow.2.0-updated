@@ -39,6 +39,7 @@ const ROOM_KEYWORDS = [
   'Media',
   'Game',
   'Gym',
+  'Flex',
   'CoveredPatio',
   'Deck',
   'Patio',
@@ -103,14 +104,23 @@ function parseFilenameToTargetLayer(name: string): string | null {
 
   let index: string | null = null;
 
-  // pattern: 3of4 / 1of2 etc
-  const ofMatch = normalized.match(/(\d+)(?=_?of\d+)/);
-  if (ofMatch) index = ofMatch[1];
+  // Find the position of the matched keyword in the normalized string
+  const keywordPattern = new RegExp(`(^|_)${matchedKeyword.norm}($|_)`, 'i');
+  const keywordMatch = normalized.match(keywordPattern);
 
-  // pattern: _3_, _3 at end, 3_ at start
-  if (!index) {
-    const underscoreMatch = normalized.match(/(?:_|^)(\d+)(?:_|$)/);
-    if (underscoreMatch) index = underscoreMatch[1];
+  if (keywordMatch) {
+    const keywordEndIndex = (keywordMatch.index || 0) + keywordMatch[0].length;
+    const afterKeyword = normalized.substring(keywordEndIndex);
+
+    // pattern: 3of4 / 1of2 etc (after the keyword)
+    const ofMatch = afterKeyword.match(/^_?(\d+)(?=_?of\d+)/);
+    if (ofMatch) index = ofMatch[1];
+
+    // pattern: _3_, _3 at end, or just 3 (after the keyword)
+    if (!index) {
+      const underscoreMatch = afterKeyword.match(/^_?(\d+)(?:_|$)/);
+      if (underscoreMatch) index = underscoreMatch[1];
+    }
   }
 
   // default to 1 if no explicit index
@@ -308,7 +318,7 @@ function autoSeedRoomNames(
         'Owners_2',
         'Owners_Bath_1',
         'Owners_Bath_2',
-        'Owners_WIC',
+        'Owners_WIC_1',
       ];
 
       for (let i = 0; i < imageNodes.length; i++) {
