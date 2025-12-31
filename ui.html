@@ -322,26 +322,14 @@
       }
 
       uploadBtn.disabled = true;
-      uploadBtn.textContent = 'Uploading...';
+      uploadBtn.textContent = 'Processing...';
 
       try {
         const images = await Promise.all(
-          selectedFiles.map(
-            (file) =>
-              new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                  const arrayBuffer = reader.result;
-                  resolve({
-                    name: file.name,
-                    data: new Uint8Array(arrayBuffer),
-                  });
-                };
-                reader.onerror = reject;
-                reader.readAsArrayBuffer(file);
-              })
-          )
+          selectedFiles.map((file) => processImage(file))
         );
+
+        uploadBtn.textContent = 'Uploading...';
 
         parent.postMessage(
           {
@@ -358,6 +346,62 @@
         uploadBtn.textContent = 'Upload to Layout';
       }
     });
+
+    // Process and optimize images for Figma API
+    async function processImage(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+          img.onload = () => {
+            // Max dimension: 4096px (Figma's recommended limit)
+            const MAX_SIZE = 4096;
+            let width = img.width;
+            let height = img.height;
+
+            // Resize if dimensions exceed limit
+            if (width > MAX_SIZE || height > MAX_SIZE) {
+              if (width > height) {
+                height = Math.round((height * MAX_SIZE) / width);
+                width = MAX_SIZE;
+              } else {
+                width = Math.round((width * MAX_SIZE) / height);
+                height = MAX_SIZE;
+              }
+            }
+
+            // Create canvas and draw image
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convert to blob with high quality compression
+            canvas.toBlob(
+              (blob) => {
+                const blobReader = new FileReader();
+                blobReader.onload = () => {
+                  resolve({
+                    name: file.name,
+                    data: new Uint8Array(blobReader.result),
+                  });
+                };
+                blobReader.onerror = reject;
+                blobReader.readAsArrayBuffer(blob);
+              },
+              'image/jpeg',
+              0.95 // 95% quality - virtually indistinguishable from original
+            );
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
 
     resetBtn.addEventListener('click', () => {
       resetBtn.disabled = true;
