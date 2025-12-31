@@ -2,6 +2,7 @@
   "name": "RoomFlow2.0",
   "id": "",
   "api": "1.0.0",
+  "version": "2.1.0",
   "main": "code.js",
   "capabilities": [],
   "enableProposedApi": false,
