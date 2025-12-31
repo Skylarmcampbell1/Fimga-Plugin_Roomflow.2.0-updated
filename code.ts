@@ -328,6 +328,15 @@ function autoSeedRoomNames(
         } else {
           img.name = `Owners_${i + 1}`;
         }
+
+        // Replace with blue-ish placeholder fill
+        img.fills = [
+          {
+            type: 'SOLID',
+            color: { r: 0.53, g: 0.73, b: 0.93 }, // Light blue color
+          },
+        ];
+
         renamedLayers += 1;
       }
 
@@ -347,6 +356,15 @@ function autoSeedRoomNames(
     let index = 1;
     for (const img of imageNodes) {
       img.name = `${token}_${index}`;
+
+      // Replace with blue-ish placeholder fill
+      img.fills = [
+        {
+          type: 'SOLID',
+          color: { r: 0.53, g: 0.73, b: 0.93 }, // Light blue color
+        },
+      ];
+
       index += 1;
       renamedLayers += 1;
     }
